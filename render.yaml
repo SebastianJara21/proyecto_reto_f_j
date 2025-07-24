@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: edudata-backend
+    env: java
+    buildCommand: mvn clean package -DskipTests
+    startCommand: java -jar target/*.jar
+    envVars:
+      - key: DATABASE_URL
+        value: jdbc:postgresql://aws-edudatadb.cvmyumwou6z6.us-east-2.rds.amazonaws.com:5432/edudata_Db
+      - key: DB_USERNAME
+        value: postgres
+      - key: DB_PASSWORD
+        value: 37NoHPcYmFikRTlgZ3z6
+      - key: OPENROUTER_API_KEY
+        value: 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
+      - key: JWT_SECRET
+        value: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970337336763979244226452948404D635166546A576E5A7234743777217A25432A462D4A614E645267556B58703273357638792F423F4528472B4B6250655368566D5971337436763979244226452948404D6351665468576D5A7134743777217A25432A462D4A614E645267556B58703273357638
+      - key: JWT_EXPIRATION
+        value: 3600000
+      - key: SERVER_URL
+        value: https://edudata-backend.onrender.com
+      - key: SHOW_SQL
+        value: false
+      - key: FORMAT_SQL
+        value: false
+      - key: LOG_SQL
+        value: ERROR
+      - key: LOG_BINDER
+        value: ERROR
+      - key: LOG_EDUDATA
+        value: INFO
+      - key: LOG_JDBC
+        value: ERROR
+      - key: LOG_WEB
+        value: INFO
+      - key: LOG_ROOT
+        value: INFO
