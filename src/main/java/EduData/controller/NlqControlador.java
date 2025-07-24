@@ -1,6 +1,7 @@
 package EduData.controller;
 
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,6 +14,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/nlq")
+@CrossOrigin(origins = "*")
 public class NlqControlador {
     private final NlqServiceMejorado service;
 

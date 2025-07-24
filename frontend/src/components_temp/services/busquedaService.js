@@ -15,8 +15,8 @@ export const busquedaService = {
             
             const response = await api.post('/nlq/pregunta', pregunta, {
                 headers: {
-                    'Content-Type': 'text/plain',
-                    'Authorization': `Bearer ${token}`
+                    'Content-Type': 'text/plain'
+                    // No agregamos Authorization aquí - el interceptor ya lo hace
                 },
             });
             
