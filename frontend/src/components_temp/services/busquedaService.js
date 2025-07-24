@@ -4,8 +4,9 @@ import api from './api';
 export const busquedaService = {
     // Realizar consulta en lenguaje natural
     consultarNLQ: async (pregunta) => {
+        const requestId = Math.random().toString(36).substr(2, 9);
         try {
-            console.log('🔍 Realizando consulta NLQ:', pregunta);
+            console.log(`🔍 [${requestId}] Realizando consulta NLQ:`, pregunta);
             
             // Verificar que hay token antes de hacer la consulta
             const token = localStorage.getItem('token');
@@ -15,15 +16,16 @@ export const busquedaService = {
             
             const response = await api.post('/nlq/pregunta', pregunta, {
                 headers: {
-                    'Content-Type': 'text/plain'
+                    'Content-Type': 'text/plain',
+                    'X-Request-ID': requestId
                     // No agregamos Authorization aquí - el interceptor ya lo hace
                 },
             });
             
-            console.log('✅ Respuesta NLQ recibida:', response.data);
+            console.log(`✅ [${requestId}] Respuesta NLQ recibida:`, response.data);
             return response.data;
         } catch (error) {
-            console.error('❌ Error en consulta NLQ:', error);
+            console.error(`❌ [${requestId}] Error en consulta NLQ:`, error);
             
             if (error.response?.status === 401) {
                 throw new Error('No tienes autorización para realizar esta consulta. Verifica tu sesión.');

@@ -13,6 +13,15 @@ export default function Dashboard() {
 
     // Cargar estadísticas al montar el componente
     useEffect(() => {
+        console.log('🏠 Dashboard montado - Limpiando estado de búsqueda...');
+        
+        // Limpiar cualquier estado de búsqueda anterior
+        setPregunta('');
+        setResultados([]);
+        setError('');
+        setJpqlGenerado('');
+        setCargando(false);
+        
         cargarEstadisticas();
     }, []);
 
@@ -37,6 +46,15 @@ export default function Dashboard() {
             return;
         }
 
+        // Evitar múltiples llamadas
+        if (cargando) {
+            console.warn('⚠️ Búsqueda ya en progreso, ignorando nueva llamada');
+            return;
+        }
+
+        const searchId = Math.random().toString(36).substr(2, 9);
+        console.log(`🚀 [${searchId}] Iniciando búsqueda:`, pregunta);
+
         setCargando(true);
         setError('');
         setResultados([]);
@@ -54,7 +72,9 @@ export default function Dashboard() {
             } else {
                 setResultados(data);
             }
+            console.log(`✅ [${searchId}] Búsqueda completada`);
         } catch (err) {
+            console.error(`❌ [${searchId}] Error en búsqueda:`, err);
             setError(err.message);
         } finally {
             setCargando(false);

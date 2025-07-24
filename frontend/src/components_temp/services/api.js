@@ -46,7 +46,8 @@ api.interceptors.request.use(
             config.headers.Authorization = `Bearer ${token}`;
         }
         console.log('🔧 API Request:', config.method?.toUpperCase(), config.url, 
-                    token ? '✅ Con token' : '❌ Sin token');
+                    token ? '✅ Con token' : '❌ Sin token',
+                    'RequestID:', Math.random().toString(36).substr(2, 9));
         return config;
     },
     (error) => {

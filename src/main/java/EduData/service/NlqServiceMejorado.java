@@ -3,12 +3,14 @@ package EduData.service;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import reactor.core.publisher.Mono;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -121,18 +123,16 @@ public class NlqServiceMejorado {
             String cleanApiKey = apiKey.trim();
             System.out.println("API Key limpia longitud: " + cleanApiKey.length());
 
-            WebClient client = WebClient.builder()
-                    .baseUrl("https://openrouter.ai")
-                    .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + cleanApiKey)
-                    .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                    .defaultHeader("HTTP-Referer", serverUrl) // Referer dinámico según entorno
-                    .defaultHeader("X-Title", "EduData") // Opcional pero recomendado
-                    .build();
+            // Validar que la API Key tenga el formato correcto
+            if (!cleanApiKey.startsWith("sk-or-v1-")) {
+                System.err.println("ERROR: API Key no tiene el formato correcto de OpenRouter");
+                return List.of(Map.of("error", "API Key de OpenRouter inválida - debe empezar con 'sk-or-v1-'"));
+            }
 
             String escapedPrompt = prompt.replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
             
             String requestBody = "{" +
-                    "\"model\": \"openai/gpt-4o\"," +
+                    "\"model\": \"meta-llama/llama-3.2-3b-instruct:free\"," +
                     "\"messages\": [" +
                     "{\"role\": \"user\", \"content\": \"" + escapedPrompt + "\"}" +
                     "]," +
@@ -144,33 +144,54 @@ public class NlqServiceMejorado {
             System.out.println("Authorization header: Bearer " + (cleanApiKey.length() > 10 ? cleanApiKey.substring(0, 10) + "..." : cleanApiKey));
             System.out.println("Request URL: https://openrouter.ai/api/v1/chat/completions");
             System.out.println("HTTP-Referer: " + serverUrl);
+            System.out.println("Request Body Preview: " + (requestBody.length() > 200 ? requestBody.substring(0, 200) + "..." : requestBody));
 
-            String responseJson = client.post()
-                    .uri("/api/v1/chat/completions")
-                    .bodyValue(requestBody)
-                    .retrieve()
-                    .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
-                            response -> {
-                                System.err.println("=== ERROR RESPONSE STATUS ===");
-                                System.err.println("Status: " + response.statusCode());
-                                System.err.println("Headers: " + response.headers().asHttpHeaders());
-                                
-                                return response.bodyToMono(String.class)
-                                        .doOnNext(errorBody -> {
-                                            System.err.println("=== ERROR RESPONSE BODY ===");
-                                            System.err.println(errorBody);
-                                        })
-                                        .flatMap(errorBody -> Mono.error(new RuntimeException("Error al llamar a OpenRouter: " + errorBody)));
-                            })
-                    .bodyToMono(String.class)
-                    .block();
+            // Usar RestTemplate en lugar de WebClient para evitar problemas de requests pendientes
+            RestTemplate restTemplate = new RestTemplate();
+            
+            // Configurar headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(cleanApiKey);
+            headers.set("HTTP-Referer", serverUrl);
+            headers.set("X-Title", "EduData");
+            
+            HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
+            
+            System.out.println("=== ENVIANDO REQUEST CON RESTTEMPLATE ===");
+            
+            String responseJson;
+            try {
+                ResponseEntity<String> response = restTemplate.exchange(
+                        "https://openrouter.ai/api/v1/chat/completions",
+                        HttpMethod.POST,
+                        entity,
+                        String.class
+                );
+                
+                responseJson = response.getBody();
+                
+                if (responseJson == null || responseJson.trim().isEmpty()) {
+                    throw new RuntimeException("Respuesta vacía de OpenRouter");
+                }
 
-            System.out.println("=== RESPUESTA DE OPENROUTER RECIBIDA ===");
+                System.out.println("=== RESPUESTA DE OPENROUTER RECIBIDA ===");
+                
+            } catch (org.springframework.web.client.HttpClientErrorException e) {
+                System.err.println("=== ERROR HTTP CLIENT ===");
+                System.err.println("Status: " + e.getStatusCode());
+                System.err.println("Response Body: " + e.getResponseBodyAsString());
+                throw new RuntimeException("Error HTTP al llamar OpenRouter: " + e.getResponseBodyAsString());
+            } catch (Exception e) {
+                System.err.println("=== ERROR GENERAL RESTTEMPLATE ===");
+                System.err.println("Error: " + e.getMessage());
+                throw new RuntimeException("Error al procesar request a OpenRouter: " + e.getMessage());
+            }
 
             @SuppressWarnings("unchecked")
-            Map<String, Object> response = (Map<String, Object>) objectMapper.readValue(responseJson, Map.class);
+            Map<String, Object> jsonResponse = (Map<String, Object>) objectMapper.readValue(responseJson, Map.class);
             @SuppressWarnings("unchecked")
-            List<Map<?, ?>> choices = (List<Map<?, ?>>) response.get("choices");
+            List<Map<?, ?>> choices = (List<Map<?, ?>>) jsonResponse.get("choices");
             Map<?, ?> choice = choices.get(0);
             Map<?, ?> message = (Map<?, ?>) choice.get("message");
             String jpql = message.get("content").toString().trim();

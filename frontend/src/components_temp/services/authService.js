@@ -11,6 +11,13 @@ export const authService = {
                 throw new Error('No se recibió token del servidor');
             }
             
+            // Limpiar COMPLETAMENTE el localStorage antes de guardar nuevos datos
+            console.log('🧹 Limpiando localStorage antes del login...');
+            localStorage.clear();
+            
+            // También limpiar sessionStorage por seguridad
+            sessionStorage.clear();
+            
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify({ username, role }));
             
@@ -36,6 +43,13 @@ export const authService = {
                 throw new Error('No se recibió token del servidor');
             }
             
+            // Limpiar COMPLETAMENTE el localStorage antes de guardar nuevos datos
+            console.log('🧹 Limpiando localStorage antes del registro...');
+            localStorage.clear();
+            
+            // También limpiar sessionStorage por seguridad
+            sessionStorage.clear();
+            
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify({ username, role }));
             
@@ -60,6 +74,13 @@ export const authService = {
             if (!token) {
                 throw new Error('No se recibió token del servidor');
             }
+            
+            // Limpiar COMPLETAMENTE el localStorage antes de guardar nuevos datos
+            console.log('🧹 Limpiando localStorage antes del login como invitado...');
+            localStorage.clear();
+            
+            // También limpiar sessionStorage por seguridad
+            sessionStorage.clear();
             
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify({ username, role }));
