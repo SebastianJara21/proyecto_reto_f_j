@@ -23,6 +23,26 @@ api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
         if (token) {
+            // Verificar si el token está expirado antes de enviarlo
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const currentTime = Date.now() / 1000;
+                
+                if (payload.exp && payload.exp < currentTime) {
+                    console.warn('⚠️ Token expirado, eliminando del localStorage');
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    window.location.href = '/login';
+                    return Promise.reject(new Error('Token expirado'));
+                }
+            } catch (e) {
+                console.warn('⚠️ Token malformado, eliminando del localStorage');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+                return Promise.reject(new Error('Token malformado'));
+            }
+            
             config.headers.Authorization = `Bearer ${token}`;
         }
         console.log('🔧 API Request:', config.method?.toUpperCase(), config.url, 
@@ -44,11 +64,16 @@ api.interceptors.response.use(
     (error) => {
         console.error('❌ API Error:', error.response?.status, error.response?.data);
         
-        if (error.response?.status === 401) {
+        // Manejar errores de autenticación y tokens expirados
+        if (error.response?.status === 401 || error.response?.status === 403) {
             console.warn('🔒 Token inválido o expirado, redirigiendo al login');
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            window.location.href = '/login';
+            
+            // Solo redirigir si no estamos ya en la página de login
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+            }
         }
         
         // Mejorar el manejo de errores

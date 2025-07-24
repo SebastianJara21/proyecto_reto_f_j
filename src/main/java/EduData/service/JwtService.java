@@ -55,8 +55,23 @@ public class JwtService {
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+        try {
+            final String username = extractUsername(token);
+            boolean isUsernameValid = username.equals(userDetails.getUsername());
+            boolean isTokenNotExpired = !isTokenExpired(token);
+            
+            if (!isUsernameValid) {
+                System.err.println("Token inválido: usuario no coincide");
+            }
+            if (!isTokenNotExpired) {
+                System.err.println("Token inválido: token expirado");
+            }
+            
+            return isUsernameValid && isTokenNotExpired;
+        } catch (Exception e) {
+            System.err.println("Error validando token: " + e.getMessage());
+            return false;
+        }
     }
 
     private boolean isTokenExpired(String token) {
@@ -68,12 +83,23 @@ public class JwtService {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts
-                .parserBuilder()
-                .setSigningKey(getSignInKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        try {
+            return Jwts
+                    .parserBuilder()
+                    .setSigningKey(getSignInKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (ExpiredJwtException e) {
+            System.err.println("JWT Token expirado: " + e.getMessage());
+            throw e;
+        } catch (MalformedJwtException e) {
+            System.err.println("JWT Token malformado: " + e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            System.err.println("Error al parsear JWT: " + e.getMessage());
+            throw e;
+        }
     }
 
     private Key getSignInKey() {
